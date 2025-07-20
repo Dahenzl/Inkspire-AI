@@ -1,51 +1,75 @@
 let canvas;
 let isDrawing = false;
 let currentTool = 'pencil';
+let gridLayer;
+let drawingLayer;
 
-function drawGrid(spacing = 30) {
-    background(255);
-    stroke(230);
-    strokeWeight(1);
+function drawGrid(g, spacing = 30) {
+    g.clear();
+    g.background(255);
+    g.stroke(230);
+    g.strokeWeight(1);
 
-    for (let x = 0; x < width; x += spacing) {
-        line(x, 0, x, height);
+    for (let x = 0; x < g.width; x += spacing) {
+        g.line(x, 0, x, g.height);
     }
 
-    for (let y = 0; y < height; y += spacing) {
-        line(0, y, width, y);
+    for (let y = 0; y < g.height; y += spacing) {
+        g.line(0, y, g.width, y);
     }
 }
 
 function setup() {
     canvas = createCanvas(windowWidth, windowHeight);
     canvas.parent('canvas-container');
-    background(255);
-    drawGrid();
-}
 
-function windowResized() {
-    resizeCanvas(windowWidth, windowHeight);
+    gridLayer = createGraphics(windowWidth, windowHeight);
+    drawingLayer = createGraphics(windowWidth, windowHeight);
+
+    drawGrid(gridLayer);
+
+    // Prevent right-click context menu on canvas
+    canvas.elt.addEventListener('contextmenu', e => e.preventDefault());
 }
 
 function draw() {
+    clear();
+    image(gridLayer, 0, 0);
+    image(drawingLayer, 0, 0);
+
     if (isDrawing) {
         if (currentTool === 'pencil') {
-            stroke(0);
-            strokeWeight(4);
+            drawingLayer.noErase();
+            drawingLayer.stroke(0);
+            drawingLayer.strokeWeight(4);
         } else if (currentTool === 'eraser') {
-            stroke(255);
-            strokeWeight(20);
+            drawingLayer.erase();
+            drawingLayer.strokeWeight(20);
         }
-        line(pmouseX, pmouseY, mouseX, mouseY);
+
+        drawingLayer.line(pmouseX, pmouseY, mouseX, mouseY);
+        drawingLayer.noErase();
     }
 }
 
 function mousePressed() {
+    if (Swal.isVisible()) return;  // Prevent drawing if a modal is open
     isDrawing = true;
 }
 
 function mouseReleased() {
     isDrawing = false;
+}
+
+function windowResized() {
+    // Keep the previous drawing and resize the canvas
+    const prevDrawing = drawingLayer.get();
+
+    resizeCanvas(windowWidth, windowHeight);
+    initLayers();
+
+    // Restore the previous drawing
+    drawingLayer.image(prevDrawing, 0, 0);
 }
 
 function selectTool(tool) {
@@ -69,26 +93,8 @@ selectTool('pencil');
 document.getElementById('pencil-btn').addEventListener('click', () => selectTool('pencil'));
 document.getElementById('eraser-btn').addEventListener('click', () => selectTool('eraser'));
 
-document.getElementById('download-btn').addEventListener('click', () => {
-    saveCanvas(canvas, 'inkspire_sketch', 'png');
-});
-
-document.getElementById('toggle-theme').addEventListener('click', () => {
-    document.body.classList.toggle('dark');
-});
-
-function enhanceWithAI(imageDataUrl) {
-    console.log('placeholder for AI enhancement logic');
-}
-
-document.getElementById('enhance-btn').addEventListener('click', () => {
-    const dataURL = canvas.elt.toDataURL();
-    enhanceWithAI(dataURL);
-});
-
 function clearCanvas() {
-    background(255);
-    drawGrid();
+    drawingLayer.clear();
 }
 
 document.getElementById('clear-btn').addEventListener('click', () => {
@@ -105,6 +111,23 @@ document.getElementById('clear-btn').addEventListener('click', () => {
             Swal.fire('Cleared!', 'Your canvas has been cleared.', 'success');
         }
     });
+});
+
+document.getElementById('download-btn').addEventListener('click', () => {
+    saveCanvas(canvas, 'inkspire_sketch', 'png');
+});
+
+function enhanceWithAI(imageDataUrl) {
+    console.log('placeholder for AI enhancement logic');
+}
+
+document.getElementById('enhance-btn').addEventListener('click', () => {
+    const dataURL = canvas.elt.toDataURL();
+    enhanceWithAI(dataURL);
+});
+
+document.getElementById('toggle-theme').addEventListener('click', () => {
+    document.body.classList.toggle('dark');
 });
 
 // Apply consistent size and spacing to all buttons
