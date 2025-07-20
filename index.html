@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inkspire AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body class="h-full min-h-screen bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100 m-0 overflow-hidden flex">
+    <aside class="w-16 bg-gray-800 text-white flex flex-col items-center">
+        <button id="pencil-btn" class="tool-btn group" data-tooltip="Pencil">
+            <i data-lucide="pencil" class="group-hover:scale-110 transition"></i>
+        </button>
+        <button id="eraser-btn" class="tool-btn group" data-tooltip="Eraser">
+            <i data-lucide="eraser" class="group-hover:scale-110 transition"></i>
+        </button>
+        <button id="clear-btn" class="tool-btn group" data-tooltip="Clear All">
+            <i data-lucide="trash-2" class="group-hover:scale-110 transition"></i>
+        </button>
+        <button id="download-btn" class="sidebar-btn group mt-auto">
+            <i data-lucide="download" class="group-hover:scale-110 transition"></i>
+        </button>
+        <button id="enhance-btn" class="sidebar-btn group">
+            <i data-lucide="sparkles" class="group-hover:scale-110 transition"></i>
+        </button>
+        <button id="toggle-theme" class="sidebar-btn group">
+            <i data-lucide="moon-star" class="group-hover:scale-110 transition"></i>
+        </button>
+    </aside>
+
+    <main class="flex-1 relative">
+        <div id="canvas-container" class="w-full h-full absolute top-0 left-0"></div>
+        <div id="enhanced-output"
+            class="absolute top-4 left-20 bg-white bg-opacity-90 dark:bg-gray-800 p-2 rounded shadow text-sm hidden">
+        </div>
+    </main>
+
+    <script src="js/app.js"></script>
+</body>
+
+</html>
