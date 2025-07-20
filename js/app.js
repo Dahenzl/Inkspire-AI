@@ -3,6 +3,7 @@ let isDrawing = false;
 let currentTool = 'pencil';
 let gridLayer;
 let drawingLayer;
+let currentColor = '#000000';
 
 function drawGrid(g, spacing = 30) {
     g.clear();
@@ -40,7 +41,7 @@ function draw() {
     if (isDrawing) {
         if (currentTool === 'pencil') {
             drawingLayer.noErase();
-            drawingLayer.stroke(0);
+            drawingLayer.stroke(currentColor);
             drawingLayer.strokeWeight(4);
         } else if (currentTool === 'eraser') {
             drawingLayer.erase();
@@ -141,6 +142,35 @@ document.querySelectorAll('.sidebar-btn, .tool-btn').forEach(btn => {
 document.querySelectorAll('.sidebar-btn').forEach(btn => {
     btn.classList.add('hover:bg-gray-600');
 });
+
+// Apply consistent styles to color buttons
+document.querySelectorAll('.color-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        currentColor = btn.getAttribute('data-color');
+        selectTool('pencil');  
+
+        // Visually indicate the selected color
+        document.querySelectorAll('.color-btn').forEach(b => 
+            b.classList.remove('ring-4', 'ring-offset-2', 'ring-indigo-500')
+        );
+        btn.classList.add('ring-4', 'ring-offset-2', 'ring-indigo-500');
+    });
+});
+
+// Add custom color input functionality
+const customColorInput = document.getElementById('custom-color');
+
+function handleCustomColor(e) {
+    const selectedColor = e.target.value;
+
+    currentColor = selectedColor;
+    currentTool = 'pencil';
+    selectTool('pencil');
+
+    customColorInput.parentElement.style.backgroundColor = selectedColor;
+}
+
+customColorInput.addEventListener('input', handleCustomColor);
 
 // Render Lucide icons
 lucide.createIcons();
