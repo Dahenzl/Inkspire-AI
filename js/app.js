@@ -6,9 +6,10 @@ let drawingLayer;
 let currentColor = '#000000';
 
 function drawGrid(g, spacing = 30) {
+    const isDark = document.body.classList.contains('dark');
     g.clear();
-    g.background(255);
-    g.stroke(230);
+    g.background(isDark ? '#1a202c' : '#f7fafc');
+    g.stroke(isDark ? '#4a5568' : '#cbd5e0');
     g.strokeWeight(1);
 
     for (let x = 0; x < g.width; x += spacing) {
@@ -98,6 +99,10 @@ function clearCanvas() {
     drawingLayer.clear();
 }
 
+function getSwalThemeClasses() {
+    return document.body.classList.contains('dark') ? 'bg-gray-800 text-white' : '';
+}
+
 document.getElementById('clear-btn').addEventListener('click', () => {
     Swal.fire({
         title: 'Clear canvas?',
@@ -105,11 +110,17 @@ document.getElementById('clear-btn').addEventListener('click', () => {
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#d33',
-        confirmButtonText: 'Yes, clear it!'
+        confirmButtonText: 'Yes, clear it!',
+        customClass: getSwalThemeClasses()
     }).then((result) => {
         if (result.isConfirmed) {
             clearCanvas();
-            Swal.fire('Cleared!', 'Your canvas has been cleared.', 'success');
+            Swal.fire({
+                title: 'Cleared!',
+                text: 'Your canvas has been cleared.',
+                icon: 'success',
+                customClass: getSwalThemeClasses()
+            });
         }
     });
 });
@@ -129,6 +140,44 @@ document.getElementById('enhance-btn').addEventListener('click', () => {
 
 document.getElementById('toggle-theme').addEventListener('click', () => {
     document.body.classList.toggle('dark');
+    drawGrid(gridLayer);
+
+    // Invert the current color if it's black or white
+    if (document.body.classList.contains('dark') && currentColor === '#000000') {
+        currentColor = '#ffffff';
+    } else if (!document.body.classList.contains('dark') && currentColor === '#ffffff') {
+        currentColor = '#000000';
+    }
+
+    // Invert the color of the black/white button
+    const blackBtn = document.querySelector('.color-btn[data-original="black"]');
+    if (blackBtn) {
+        if (document.body.classList.contains('dark')) {
+            blackBtn.style.backgroundColor = '#ffffff';
+            blackBtn.setAttribute('data-color', '#ffffff');
+        } else {
+            blackBtn.style.backgroundColor = '#000000';
+            blackBtn.setAttribute('data-color', '#000000');
+        }
+    }
+
+    // Invert colors in the drawing layer
+    const fromColor = document.body.classList.contains('dark') ? [0, 0, 0, 255] : [255, 255, 255, 255];
+    const toColor = document.body.classList.contains('dark') ? [255, 255, 255, 255] : [0, 0, 0, 255];
+
+    drawingLayer.loadPixels();
+    for (let i = 0; i < drawingLayer.pixels.length; i += 4) {
+        if (drawingLayer.pixels[i] === fromColor[0] &&
+            drawingLayer.pixels[i + 1] === fromColor[1] &&
+            drawingLayer.pixels[i + 2] === fromColor[2] &&
+            drawingLayer.pixels[i + 3] === fromColor[3]) {
+            drawingLayer.pixels[i] = toColor[0];
+            drawingLayer.pixels[i + 1] = toColor[1];
+            drawingLayer.pixels[i + 2] = toColor[2];
+            drawingLayer.pixels[i + 3] = toColor[3];
+        }
+    }
+    drawingLayer.updatePixels();
 });
 
 // Apply consistent size and spacing to all buttons
@@ -147,10 +196,10 @@ document.querySelectorAll('.sidebar-btn').forEach(btn => {
 document.querySelectorAll('.color-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         currentColor = btn.getAttribute('data-color');
-        selectTool('pencil');  
+        selectTool('pencil');
 
         // Visually indicate the selected color
-        document.querySelectorAll('.color-btn').forEach(b => 
+        document.querySelectorAll('.color-btn').forEach(b =>
             b.classList.remove('ring-4', 'ring-offset-2', 'ring-indigo-500')
         );
         btn.classList.add('ring-4', 'ring-offset-2', 'ring-indigo-500');
