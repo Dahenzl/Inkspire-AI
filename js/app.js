@@ -1,12 +1,17 @@
+import { Client } from 'https://esm.sh/@gradio/client';
+
 let canvas;
 let isDrawing = false;
 let currentTool = 'pencil';
 let gridLayer;
 let drawingLayer;
 let currentColor = '#000000';
+let isDark = false;
+
+const container = document.getElementById('canvas-container');
 
 function drawGrid(g, spacing = 30) {
-    const isDark = document.body.classList.contains('dark');
+    isDark = document.body.classList.contains('dark');
     g.clear();
     g.background(isDark ? '#1a202c' : '#f7fafc');
     g.stroke(isDark ? '#4a5568' : '#cbd5e0');
@@ -22,15 +27,17 @@ function drawGrid(g, spacing = 30) {
 }
 
 function setup() {
-    canvas = createCanvas(windowWidth, windowHeight);
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+
+    canvas = createCanvas(width, height);
     canvas.parent('canvas-container');
 
-    gridLayer = createGraphics(windowWidth, windowHeight);
-    drawingLayer = createGraphics(windowWidth, windowHeight);
+    gridLayer = createGraphics(width, height);
+    drawingLayer = createGraphics(width, height);
 
     drawGrid(gridLayer);
 
-    // Prevent right-click context menu on canvas
     canvas.elt.addEventListener('contextmenu', e => e.preventDefault());
 }
 
@@ -67,8 +74,14 @@ function windowResized() {
     // Keep the previous drawing and resize the canvas
     const prevDrawing = drawingLayer.get();
 
-    resizeCanvas(windowWidth, windowHeight);
-    initLayers();
+    // Get the new dimensions
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+
+    resizeCanvas(width, height);
+    gridLayer = createGraphics(width, height);
+    drawGrid(gridLayer);
+    drawingLayer = createGraphics(width, height);
 
     // Restore the previous drawing
     drawingLayer.image(prevDrawing, 0, 0);
@@ -90,8 +103,6 @@ function selectTool(tool) {
     btn.classList.add('bg-indigo-600', 'text-white');
 }
 
-selectTool('pencil');
-
 document.getElementById('pencil-btn').addEventListener('click', () => selectTool('pencil'));
 document.getElementById('eraser-btn').addEventListener('click', () => selectTool('eraser'));
 
@@ -100,7 +111,7 @@ function clearCanvas() {
 }
 
 function getSwalThemeClasses() {
-    return document.body.classList.contains('dark') ? 'bg-gray-800 text-white' : '';
+    return isDark ? 'bg-gray-800 text-white' : '';
 }
 
 document.getElementById('clear-btn').addEventListener('click', () => {
@@ -125,16 +136,85 @@ document.getElementById('clear-btn').addEventListener('click', () => {
     });
 });
 
+function getDrawingWithBackground(bgColor) {
+    const { width, height } = drawingLayer.canvas;
+
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = width;
+    tempCanvas.height = height;
+
+    const ctx = tempCanvas.getContext('2d');
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, width, height);
+    ctx.drawImage(drawingLayer.canvas, 0, 0, width, height);
+
+    return tempCanvas;
+}
+
 document.getElementById('download-btn').addEventListener('click', () => {
-    saveCanvas(canvas, 'inkspire_sketch', 'png');
+    saveCanvas(getDrawingWithBackground(isDark ? '#1a202c' : '#f7fafc'), 'inkspire_sketch', 'png');
 });
 
-function enhanceWithAI(imageDataUrl) {
-    console.log('placeholder for AI enhancement logic');
+async function enhanceWithAI(imageDataUrl) {
+    const { value: formValues } = await Swal.fire({
+        title: 'Enhance with AI',
+        html: `
+            <img src="${imageDataUrl}" alt="Preview" class="mx-auto mb-4 max-h-40 border-2">
+            <input id="prompt-input" class="swal2-input" placeholder="Enter a prompt (optional)">
+        `,
+        focusConfirm: false,
+        showCancelButton: true,
+        preConfirm: () => document.getElementById('prompt-input').value,
+        cancelButtonText: 'Cancel',
+        confirmButtonText: 'Enhance',
+        customClass: getSwalThemeClasses()
+    });
+
+    if (formValues === undefined) return; // User cancelled
+
+    Swal.fire({ title: 'Enhancing...', text: 'Please wait...', didOpen: () => Swal.showLoading(), customClass: getSwalThemeClasses() });
+
+    try {
+        const blob = await (await fetch(imageDataUrl)).blob();
+
+        const client = await Client.connect("hysts/ControlNet-v1-1");
+        const result = await client.predict("/lineart", {
+            image: blob,
+            prompt: formValues || 'Make it realistic',
+            num_images: 1,
+            preprocess_resolution: 768,
+            image_resolution: 512,
+            num_steps: 60,
+            guidance_scale: 20,
+            seed: 42,
+            preprocessor_name: 'None'
+        });
+
+        const enhancedUrl = result.data[0][1].image.url;
+
+        Swal.fire({
+            title: 'Enhanced Result',
+            html: `<img src="${enhancedUrl}" alt="Preview" class="mx-auto mb-4 max-h-40 border-2">`,
+            showCancelButton: true,
+            cancelButtonText: 'OK',
+            confirmButtonText: 'Download',
+            customClass: getSwalThemeClasses()
+        }).then(result => {
+            if (result.isConfirmed) {
+                const a = document.createElement('a');
+                a.href = enhancedUrl;
+                a.download = 'enhanced_sketch.png';
+                a.click();
+            }
+        });
+
+    } catch (err) {
+        Swal.fire({ title: 'Error', text: err.message, icon: 'error', customClass: getSwalThemeClasses() });
+    }
 }
 
 document.getElementById('enhance-btn').addEventListener('click', () => {
-    const dataURL = canvas.elt.toDataURL();
+    const dataURL = getDrawingWithBackground(isDark ? '#1a202c' : '#f7fafc').toDataURL();
     enhanceWithAI(dataURL);
 });
 
@@ -223,3 +303,13 @@ customColorInput.addEventListener('input', handleCustomColor);
 
 // Render Lucide icons
 lucide.createIcons();
+
+// Select the pencil tool by default
+selectTool('pencil');
+
+// Export functions for p5.js
+window.setup = setup;
+window.draw = draw;
+window.mousePressed = mousePressed;
+window.mouseReleased = mouseReleased;
+window.windowResized = windowResized;
