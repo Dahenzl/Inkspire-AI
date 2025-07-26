@@ -273,9 +273,11 @@ document.querySelectorAll('.sidebar-btn').forEach(btn => {
 });
 
 // Apply consistent styles to color buttons
-document.querySelectorAll('.color-btn').forEach(btn => {
+document.querySelectorAll('.color-btn').forEach((btn, index, array) => {
     btn.addEventListener('click', () => {
-        currentColor = btn.getAttribute('data-color');
+        if (index !== array.length - 1) {
+            currentColor = btn.getAttribute('data-color');
+        }
         selectTool('pencil');
 
         // Visually indicate the selected color
@@ -300,6 +302,7 @@ function handleCustomColor(e) {
 }
 
 customColorInput.addEventListener('input', handleCustomColor);
+customColorInput.addEventListener('click', handleCustomColor);
 
 // Render Lucide icons
 lucide.createIcons();
