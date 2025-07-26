@@ -71,19 +71,22 @@ function mousePressed() {
 }
 
 function mouseReleased() {
-    isDrawing = false;
 
-    // Save the current drawing state to history
-    const currentDrawing = drawingLayer.get();
-    if (historyIndex < canvasHistory.length - 1) {
-        canvasHistory.splice(historyIndex + 1);
+    if (isDrawing) {
+        // Save the current drawing state to history
+        const currentDrawing = drawingLayer.get();
+        if (historyIndex < canvasHistory.length - 1) {
+            canvasHistory.splice(historyIndex + 1);
+        }
+        canvasHistory.push(currentDrawing);
+        historyIndex = canvasHistory.length - 1;
+        if (canvasHistory.length > MAX_HISTORY) {
+            canvasHistory.shift(); // Limit history size to MAX_HISTORY
+            historyIndex--;
+        }
     }
-    canvasHistory.push(currentDrawing);
-    historyIndex = canvasHistory.length - 1;
-    if (canvasHistory.length > MAX_HISTORY) {
-        canvasHistory.shift(); // Limit history size to MAX_HISTORY
-        historyIndex--;
-    }
+
+    isDrawing = false;
 }
 
 function undo() {
@@ -104,18 +107,16 @@ function undo() {
         });
     }
 
-    clear();
-    image(gridLayer, 0, 0);
-    image(drawingLayer, 0, 0);
-
-    // Reset the current tool to pencil after undo
-    selectTool('pencil');
+    draw();
+    console.log(`Undo: ${historyIndex}/${canvasHistory.length - 1}`);
 }
 
 function redo() {
     if (historyIndex < canvasHistory.length - 1) {
         historyIndex++;
-        drawingLayer = canvasHistory[historyIndex].get();
+        let lastDrawing = canvasHistory[historyIndex];
+        drawingLayer.clear();
+        drawingLayer.image(lastDrawing, 0, 0);
     } else {
         Swal.fire({
             title: 'No more redos',
@@ -124,10 +125,8 @@ function redo() {
             customClass: getSwalThemeClasses()
         });
     }
-
-    clear();
-    image(gridLayer, 0, 0);
-    image(drawingLayer, 0, 0);
+    console.log(`Redo: ${historyIndex}/${canvasHistory.length - 1}`);
+    draw();
 }
 
 function windowResized() {
