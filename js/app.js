@@ -67,7 +67,11 @@ function draw() {
 
 function mousePressed() {
     if (Swal.isVisible()) return;  // Prevent drawing if a modal is open
-    isDrawing = true;
+    
+    // Check if mouse is inside the canvas bounds
+    if (mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) {
+        isDrawing = true;
+    }
 }
 
 function mouseReleased() {
