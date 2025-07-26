@@ -8,6 +8,10 @@ let drawingLayer;
 let currentColor = '#000000';
 let isDark = false;
 
+const canvasHistory = [];
+let historyIndex = -1;
+const MAX_HISTORY = 20;
+
 const container = document.getElementById('canvas-container');
 
 function drawGrid(g, spacing = 30) {
@@ -63,11 +67,70 @@ function draw() {
 
 function mousePressed() {
     if (Swal.isVisible()) return;  // Prevent drawing if a modal is open
-    isDrawing = true;
+    
+    // Check if mouse is inside the canvas bounds
+    if (mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) {
+        isDrawing = true;
+    }
 }
 
 function mouseReleased() {
+
+    if (isDrawing) {
+        // Save the current drawing state to history
+        const currentDrawing = drawingLayer.get();
+        if (historyIndex < canvasHistory.length - 1) {
+            canvasHistory.splice(historyIndex + 1);
+        }
+        canvasHistory.push(currentDrawing);
+        historyIndex = canvasHistory.length - 1;
+        if (canvasHistory.length > MAX_HISTORY) {
+            canvasHistory.shift(); // Limit history size to MAX_HISTORY
+            historyIndex--;
+        }
+    }
+
     isDrawing = false;
+}
+
+function undo() {
+    if (historyIndex > 0) {
+        historyIndex--;
+        let lastDrawing = canvasHistory[historyIndex];
+        drawingLayer.clear();
+        drawingLayer.image(lastDrawing, 0, 0);
+    } else if (historyIndex === 0) {
+        historyIndex = -1; // Reset to -1 if already at the first state
+        drawingLayer.clear();
+    } else {
+        Swal.fire({
+            title: 'No more undos',
+            text: 'You are at the beginning of your drawing history.',
+            icon: 'info',
+            customClass: getSwalThemeClasses()
+        });
+    }
+
+    draw();
+    console.log(`Undo: ${historyIndex}/${canvasHistory.length - 1}`);
+}
+
+function redo() {
+    if (historyIndex < canvasHistory.length - 1) {
+        historyIndex++;
+        let lastDrawing = canvasHistory[historyIndex];
+        drawingLayer.clear();
+        drawingLayer.image(lastDrawing, 0, 0);
+    } else {
+        Swal.fire({
+            title: 'No more redos',
+            text: 'You are at the end of your drawing history.',
+            icon: 'info',
+            customClass: getSwalThemeClasses()
+        });
+    }
+    console.log(`Redo: ${historyIndex}/${canvasHistory.length - 1}`);
+    draw();
 }
 
 function windowResized() {
@@ -309,6 +372,20 @@ lucide.createIcons();
 
 // Select the pencil tool by default
 selectTool('pencil');
+
+// Add event listeners for undo and redo key shortcuts
+document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey || e.metaKey) {
+        if (e.key === 'z') {
+            e.preventDefault();
+            undo();
+        }
+        if (e.key === 'y' || e.key === 'Z') {
+            e.preventDefault();
+            redo();
+        }
+    }
+});
 
 // Export functions for p5.js
 window.setup = setup;
