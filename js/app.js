@@ -10,6 +10,7 @@ let isDark = false;
 
 const canvasHistory = [];
 let historyIndex = -1;
+const MAX_HISTORY = 20;
 
 const container = document.getElementById('canvas-container');
 
@@ -79,8 +80,8 @@ function mouseReleased() {
     }
     canvasHistory.push(currentDrawing);
     historyIndex = canvasHistory.length - 1;
-    if (canvasHistory.length > 20) {
-        canvasHistory.shift(); // Limit history size to 20
+    if (canvasHistory.length > MAX_HISTORY) {
+        canvasHistory.shift(); // Limit history size to MAX_HISTORY
         historyIndex--;
     }
 }
